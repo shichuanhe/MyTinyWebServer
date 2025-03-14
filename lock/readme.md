@@ -1,3 +1,4 @@
+
 /*
 实现线程同步机制包装类：信号量  互斥锁  条件变量
 1.符合RAII原理,确保锁的获取和释放严格遵循作用域规则
@@ -172,3 +173,80 @@ public:
         return pthread_cond_broadcast(&m_cond)==0;
     }
 }
+
+/*  
+    int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr): 初始化条件变量  
+    1. 参数：  
+        a. cond: 指向待初始化的条件变量对象的指针  
+        b. attr: 条件变量属性（通常为NULL表示默认属性）  
+    2. 返回值：  
+        a. 成功返回 0  
+        b. 失败返回错误码  
+    3. 注意：  
+        a. 条件变量必须初始化后才能使用  
+        b. 可静态初始化：pthread_cond_t cond = PTHREAD_COND_INITIALIZER  
+*/  
+  
+/*  
+    int pthread_cond_destroy(pthread_cond_t *cond): 销毁条件变量  
+    1. 参数：  
+        a. cond: 指向待销毁的条件变量对象的指针  
+    2. 返回值：  
+        a. 成功返回 0  
+        b. 失败返回错误码
+    3. 行为：  
+        a. 释放条件变量占用的资源  
+        b. 销毁后不可再进行任何等待/唤醒操作  
+*/  
+  
+/*  
+    int pthread_cond_broadcast(pthread_cond_t *cond): 唤醒所有等待线程  
+    1. 参数：  
+        a. cond: 指向目标条件变量对象的指针  
+    2. 返回值：  
+        a. 成功返回 0  
+        b. 失败返回错误码 
+    3. 行为：  
+        a. 唤醒所有等待该条件变量的线程  
+        b. 可能引发惊群效应（thundering herd problem）  
+        c. 无等待线程时调用无害  
+*/  
+  
+/*  
+    int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex): 等待条件变量  该函数调用时需要传入 mutex参数(加锁的互斥锁) ,函数执行时,先把调用线程放入条件变量的请求队列,然后将互斥锁mutex解锁,当函数成功返回为0时,互斥锁会再次被锁上. 也就是说函数内部会有一次解锁和加锁操作.
+    1. 参数：  
+        a. cond: 指向目标条件变量对象的指针  
+        b. mutex: 指向已加锁的互斥锁对象的指针（调用前必须锁定）  
+    2. 返回值：  
+        a. 成功返回 0  
+        b. 失败返回错误码（如EINVAL无效参数，EPERM未持有互斥锁）  
+    3. 行为：  
+        a. 原子操作：将线程加入等待队列 → 解锁互斥锁 → 阻塞等待  
+        b. 被唤醒后：重新加锁互斥锁 → 返回调用处  
+    4. 注意：  
+        a. 必须使用循环检查条件（防止虚假唤醒）：  
+            while(condition_not_met) pthread_cond_wait(...)  
+        b. mutex未提前锁定将导致未定义行为  
+*/  
+/*  
+    int pthread_cond_signal(pthread_cond_t *cond): 唤醒一个等待线程  
+    1. 参数：  
+        a. cond: 指向目标条件变量对象的指针  
+    2. 返回值：  
+        a. 成功返回 0  
+        b. 失败返回错误码（如EINVAL无效条件变量）  
+    3. 行为：  
+        a. 唤醒至少一个正在等待该条件变量的线程  
+        b. 若无线程等待，调用无害（无副作用）  
+        c. 具体唤醒线程由调度策略决定（不保证FIFO）  
+    4. 注意：  
+        a. 通常与互斥锁配合使用：  
+            1. 调用线程应在持有互斥锁时调用该函数  
+            2. 被唤醒线程需重新获取互斥锁才能继续执行  
+        b. 虚假唤醒（spurious wakeup）仍需条件检查：  
+            while(condition_not_met) pthread_cond_wait(...)  
+        c. 对比broadcast：  
+            - signal() 唤醒1个线程，资源竞争较小  
+            - broadcast() 唤醒所有线程，适合状态全局变化  
+*/  
+
