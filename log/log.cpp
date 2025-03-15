@@ -90,8 +90,6 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size, int split
 //eg: log.write_log(1, "User %s logged in from %s", username, ip_address);
 void Log::write_log(int level, const char *format, ...)
 {
-    if(level<m_log_level) return;//级别过滤
-
     struct timeval now = {0, 0};
     gettimeofday(&now, NULL);
     time_t t = now.tv_sec;

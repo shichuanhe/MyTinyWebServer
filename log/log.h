@@ -10,14 +10,6 @@
 #include <pthread.h>
 #include "block_queue.h"
 
-enum LogLevel {
-    DEBUG = 0,
-    INFO = 1,
-    WARN = 2,
-    ERROR = 3,
-    CRITICAL = 4
-};
-
 class Log{
 private:
     Log();//->创建的时候不初始化，用的时候再初始化
@@ -46,7 +38,6 @@ private:
     bool m_is_async;                  //是否同步标志位
     locker m_mutex;
 
-    static LogLevel m_log_level; // 当前日志级别
     int m_close_log; //关闭日志
 public:
 
@@ -61,13 +52,6 @@ public:
         Log::get_instance()->async_write_log();
     }
 
-    // 设置日志级别方法
-    static void set_level(LogLevel level) {
-        m_mutex.lock();
-        m_log_level = level;
-        m_mutex.unlock();
-    }
-
     //可选择的参数有日志文件、日志缓冲区大小、最大行数以及最长日志条队列
     bool init(const char *file_name, int close_log, int log_buf_size = 8192, int split_lines = 5000000, int max_queue_size = 0);
 
@@ -76,14 +60,12 @@ public:
     void flush(void);
 };
 
-LogLevel Log::m_log_level = INFO;
-
 //通过m_close_log全局开关控制日志输出  每次写入后调用flush保证及时落盘（可能影响性能）
 
 // 增加级别参数检查
-#define LOG_DEBUG(format, ...) if(0 == m_close_log&& DEBUG >= Log::get_instance()->get_level()) {Log::get_instance()->write_log(0, format, ##__VA_ARGS__); Log::get_instance()->flush();}
-#define LOG_INFO(format, ...) if(0 == m_close_log&& INFO >= Log::get_instance()->get_level()) {Log::get_instance()->write_log(1, format, ##__VA_ARGS__); Log::get_instance()->flush();}
-#define LOG_WARN(format, ...) if(0 == m_close_log&& WARN >= Log::get_instance()->get_level()) {Log::get_instance()->write_log(2, format, ##__VA_ARGS__); Log::get_instance()->flush();}
-#define LOG_ERROR(format, ...) if(0 == m_close_log&& ERROR >= Log::get_instance()->get_level()) {Log::get_instance()->write_log(3, format, ##__VA_ARGS__); Log::get_instance()->flush();}
+#define LOG_DEBUG(format, ...) if(0 == m_close_log) {Log::get_instance()->write_log(0, format, ##__VA_ARGS__); Log::get_instance()->flush();}
+#define LOG_INFO(format, ...) if(0 == m_close_log) {Log::get_instance()->write_log(1, format, ##__VA_ARGS__); Log::get_instance()->flush();}
+#define LOG_WARN(format, ...) if(0 == m_close_log) {Log::get_instance()->write_log(2, format, ##__VA_ARGS__); Log::get_instance()->flush();}
+#define LOG_ERROR(format, ...) if(0 == m_close_log) {Log::get_instance()->write_log(3, format, ##__VA_ARGS__); Log::get_instance()->flush();}
 
 #endif
